@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>드림클래스 6학년 | 학급 경제 & 게이미피케이션 플랫폼</title>
+  <meta name="description" content="초등학교 6학년 학급 화폐, 1인 1역, 경험치/레벨업, 학급 상점 관리 웹 애플리케이션">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- React 18 & Babel CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Lucide Icons & Canvas Confetti CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      --font-primary: 'Noto Sans KR', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #0f172a 100%);
+      --bg-card: rgba(30, 41, 59, 0.7);
+      --border-color: rgba(255, 255, 255, 0.12);
+      --border-glow: rgba(99, 102, 241, 0.4);
+      --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      --accent-amber: #f59e0b;
+      --accent-amber-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      --accent-emerald-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-primary);
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .glass-panel {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .glass-card {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      transition: all 0.2s ease;
+    }
+    .glass-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-glow);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-radius: var(--radius-md);
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-primary { background: var(--primary-gradient); color: white; }
+    .btn-amber { background: var(--accent-amber-gradient); color: white; }
+    .btn-emerald { background: var(--accent-emerald-gradient); color: white; }
+    .btn-secondary { background: rgba(255, 255, 255, 0.08); color: white; border: 1px solid var(--border-color); }
+    .btn-danger { background: linear-gradient(135deg, #f43f5e, #e11d48); color: white; }
+    .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: var(--radius-sm); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border-radius: var(--radius-full);
+    }
+    .badge-purple { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
+    .badge-amber { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge-emerald { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+
+    .xp-bar {
+      width: 100%; height: 10px; background: rgba(255, 255, 255, 0.1); border-radius: var(--radius-full); overflow: hidden;
+    }
+    .xp-fill {
+      height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899); border-radius: var(--radius-full); transition: width 0.5s ease;
+    }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem;
+    }
+    .modal-content {
+      background: #1e293b; border: 1px solid var(--border-color); border-radius: var(--radius-lg);
+      max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 1.5rem; box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React Code App -->
+  <script type="text/babel">
+    const { useState, useEffect, createContext, useContext } = React;
+
+    // --- INITIAL DATA ---
+    const INITIAL_STUDENTS = [
+      { id: 1, name: '김강민', level: 3, xp: 260, balance: 350, role: '우유 도우미', roleCompletedToday: false, avatar: '🦁' },
+      { id: 2, name: '김민서', level: 4, xp: 380, balance: 520, role: '칠판 도우미', roleCompletedToday: true, avatar: '🦊' },
+      { id: 3, name: '박준우', level: 2, xp: 190, balance: 210, role: '청소반장', roleCompletedToday: false, avatar: '🐯' },
+      { id: 4, name: '서아린', level: 5, xp: 450, balance: 640, role: '게시판 관리자', roleCompletedToday: true, avatar: '🐰' },
+      { id: 5, name: '이도현', level: 3, xp: 290, balance: 300, role: '창문/환기 관리자', roleCompletedToday: false, avatar: '🐻' },
+      { id: 6, name: '정하윤', level: 4, xp: 340, balance: 410, role: '에너지 파수꾼', roleCompletedToday: true, avatar: '🐼' },
+      { id: 7, name: '최유진', level: 3, xp: 220, balance: 280, role: '정보 도우미', roleCompletedToday: false, avatar: '🐨' },
+      { id: 8, name: '한지후', level: 2, xp: 150, balance: 180, role: '학급 도서관 관리자', roleCompletedToday: false, avatar: '🐵' },
+      { id: 9, name: '강다은', level: 4, xp: 390, balance: 490, role: '체육 도우미', roleCompletedToday: true, avatar: '🦄' },
+      { id: 10, name: '윤서준', level: 3, xp: 270, balance: 320, role: '출석부 도우미', roleCompletedToday: true, avatar: '🦉' },
+      { id: 11, name: '임시우', level: 2, xp: 180, balance: 230, role: '식판 도우미', roleCompletedToday: false, avatar: '🐺' },
+      { id: 12, name: '조예은', level: 5, xp: 480, balance: 710, role: '식물 집사', roleCompletedToday: true, avatar: '🐱' },
+      { id: 13, name: '송현우', level: 3, xp: 240, balance: 290, role: '우유 도우미', roleCompletedToday: false, avatar: '🐶' },
+      { id: 14, name: '신소율', level: 4, xp: 320, balance: 380, role: '칠판 도우미', roleCompletedToday: true, avatar: '🐹' },
+      { id: 15, name: '유재민', level: 3, xp: 210, balance: 250, role: '청소반장', roleCompletedToday: false, avatar: '🐬' },
+      { id: 16, name: '오아인', level: 4, xp: 360, balance: 440, role: '게시판 관리자', roleCompletedToday: true, avatar: '🐥' },
+      { id: 17, name: '권태양', level: 2, xp: 140, balance: 160, role: '창문/환기 관리자', roleCompletedToday: false, avatar: '🦅' },
+      { id: 18, name: '황지민', level: 3, xp: 280, balance: 330, role: '에너지 파수꾼', roleCompletedToday: false, avatar: '🐧' },
+      { id: 19, name: '안주원', level: 4, xp: 310, balance: 400, role: '정보 도우미', roleCompletedToday: true, avatar: '🐸' },
+      { id: 20, name: '송하은', level: 5, xp: 430, balance: 600, role: '학급 도서관 관리자', roleCompletedToday: true, avatar: '🦋' },
+      { id: 21, name: '백건우', level: 2, xp: 170, balance: 200, role: '체육 도우미', roleCompletedToday: false, avatar: '🦖' },
+      { id: 22, name: '문수아', level: 4, xp: 370, balance: 460, role: '출석부 도우미', roleCompletedToday: true, avatar: '🦩' },
+      { id: 23, name: '홍지호', level: 3, xp: 230, balance: 270, role: '식판 도우미', roleCompletedToday: false, avatar: '🐝' },
+      { id: 24, name: '양나윤', level: 4, xp: 350, balance: 430, role: '식물 집사', roleCompletedToday: true, avatar: '🐿️' },
+      { id: 25, name: '류성민', level: 3, xp: 250, balance: 310, role: '우유 도우미', roleCompletedToday: false, avatar: '🦔' }
+    ];
+
+    const INITIAL_SHOP_ITEMS = [
+      { id: 1, title: '🌟 자리 선택권', price: 500, description: '다음 주 원하는 자리를 우선 지정할 수 있습니다.', stock: 3, icon: '🌟' },
+      { id: 2, title: '📝 숙제 1회 면제권', price: 400, description: '일일 과제(단원평가 제외)를 1회 면제받습니다.', stock: 5, icon: '📝' },
+      { id: 3, title: '🎮 5분 자유시간 쿠폰', price: 300, description: '쉬는 시간을 5분 더 연장할 수 있습니다.', stock: 10, icon: '🎮' },
+      { id: 4, title: '🧹 1인 1역 1일 대리권', price: 350, description: '하루 동안 담임 선생님이 역할을 대신 수행합니다.', stock: 2, icon: '🧹' },
+      { id: 5, title: '🎨 모둠 변경 우선권', price: 450, description: '다음 모둠 구성 시 모둠원 선택 우선권을 얻습니다.', stock: 4, icon: '🎨' },
+      { id: 6, title: '🍬 칭찬 간식 쿠폰', price: 200, description: '담임 선생님의 달콤한 간식 선물 세트로 교환합니다.', stock: 15, icon: '🍬' },
+      { id: 7, title: '🎵 급식시간 신청곡 재생', price: 150, description: '점심시간에 자신이 좋아하는 노래 1곡을 트랙으로 재생합니다.', stock: 8, icon: '🎵' }
+    ];
+
+    const AVAILABLE_ROLES = [
+      '우유 도우미', '칠판 도우미', '청소반장', '게시판 관리자', 
+      '창문/환기 관리자', '에너지 파수꾼', '정보 도우미', '학급 도서관 관리자', 
+      '체육 도우미', '출석부 도우미', '식판 도우미', '식물 집사'
+    ];
+
+    // Context Setup
+    const AppContext = createContext();
+
+    const AppProvider = ({ children }) => {
+      const [students, setStudents] = useState(() => {
+        const saved = localStorage.getItem('class_students');
+        return saved ? JSON.parse(saved) : INITIAL_STUDENTS;
+      });
+
+      const [shopItems, setShopItems] = useState(() => {
+        const saved = localStorage.getItem('class_shop_items');
+        return saved ? JSON.parse(saved) : INITIAL_SHOP_ITEMS;
+      });
+
+      const [coupons, setCoupons] = useState(() => {
+        const saved = localStorage.getItem('class_coupons');
+        return saved ? JSON.parse(saved) : [
+          { id: 101, studentId: 2, itemId: 2, title: '📝 숙제 1회 면제권', icon: '📝', status: 'unused', purchasedAt: '2026-10-04' }
+        ];
+      });
+
+      const [history, setHistory] = useState(() => {
+        const saved = localStorage.getItem('class_history');
+        return saved ? JSON.parse(saved) : [
+          { id: 1, timestamp: '2026-10-05 09:00', studentName: '김민서', type: 'EARN', amount: 50, description: '1인 1역 (칠판 도우미) 완수' }
+        ];
+      });
+
+      const [mode, setMode] = useState('student');
+      const [selectedStudentId, setSelectedStudentId] = useState(1);
+
+      useEffect(() => { localStorage.setItem('class_students', JSON.stringify(students)); }, [students]);
+      useEffect(() => { localStorage.setItem('class_shop_items', JSON.stringify(shopItems)); }, [shopItems]);
+      useEffect(() => { localStorage.setItem('class_coupons', JSON.stringify(coupons)); }, [coupons]);
+      useEffect(() => { localStorage.setItem('class_history', JSON.stringify(history)); }, [history]);
+
+      const currentStudent = students.find(s => s.id === selectedStudentId) || students[0];
+
+      const fireConfetti = () => {
+        if (window.confetti) confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+      };
+
+      const adjustCurrency = (studentId, amount, reason, isGroup = false) => {
+        setStudents(prev => prev.map(s => {
+          if (!isGroup && s.id !== studentId) return s;
+          const oldLevel = s.level;
+          const newBal = Math.max(0, s.balance + amount);
+          const newXp = amount > 0 ? s.xp + amount : s.xp;
+          const newLvl = Math.floor(newXp / 100) + 1;
+          if (newLvl > oldLevel) fireConfetti();
+          return { ...s, balance: newBal, xp: newXp, level: newLvl };
+        }));
+
+        const name = isGroup ? '전체 학생' : (students.find(s => s.id === studentId)?.name || '학생');
+        setHistory(prev => [
+          {
+            id: Date.now(),
+            timestamp: new Date().toLocaleString('ko-KR', { hour12: false }),
+            studentName: name,
+            type: amount >= 0 ? 'EARN' : 'SPEND',
+            amount: Math.abs(amount),
+            description: reason || (amount >= 0 ? '화폐 지급' : '화폐 차감')
+          },
+          ...prev
+        ]);
+      };
+
+      const toggleRoleCompletion = (studentId) => {
+        setStudents(prev => prev.map(s => {
+          if (s.id === studentId) {
+            const next = !s.roleCompletedToday;
+            if (next) fireConfetti();
+            return { ...s, roleCompletedToday: next };
+          }
+          return s;
+        }));
+      };
+
+      const updateStudentRole = (studentId, newRole) => {
+        setStudents(prev => prev.map(s => s.id === studentId ? { ...s, role: newRole } : s));
+      };
+
+      const buyShopItem = (studentId, itemId) => {
+        const student = students.find(s => s.id === studentId);
+        const item = shopItems.find(i => i.id === itemId);
+
+        if (!student || !item) return { success: false, message: '찾을 수 없음' };
+        if (student.balance < item.price) return { success: false, message: '잔액이 부족합니다!' };
+        if (item.stock <= 0) return { success: false, message: '품절되었습니다.' };
+
+        setStudents(prev => prev.map(s => s.id === studentId ? { ...s, balance: s.balance - item.price } : s));
+        setShopItems(prev => prev.map(i => i.id === itemId ? { ...i, stock: i.stock - 1 } : i));
+        setCoupons(prev => [{
+          id: Date.now(), studentId, itemId, title: item.title, icon: item.icon, status: 'unused', purchasedAt: new Date().toLocaleDateString('ko-KR')
+        }, ...prev]);
+
+        setHistory(prev => [{
+          id: Date.now(),
+          timestamp: new Date().toLocaleString('ko-KR', { hour12: false }),
+          studentName: student.name,
+          type: 'COUPON',
+          amount: -item.price,
+          description: `상점 쿠폰 구매: [${item.title}]`
+        }, ...prev]);
+
+        fireConfetti();
+        return { success: true, message: `'${item.title}' 구매 완료!` };
+      };
+
+      const useCoupon = (couponId) => {
+        setCoupons(prev => prev.map(c => c.id === couponId ? { ...c, status: 'used' } : c));
+        fireConfetti();
+      };
+
+      const addShopItem = (newItem) => {
+        setShopItems(prev => [...prev, { ...newItem, id: Date.now() }]);
+      };
+
+      const deleteShopItem = (itemId) => {
+        setShopItems(prev => prev.filter(i => i.id !== itemId));
+      };
+
+      const resetAllData = () => {
+        if (confirm('모든 학급 데이터를 리셋하시겠습니까?')) {
+          localStorage.clear();
+          setStudents(INITIAL_STUDENTS);
+          setShopItems(INITIAL_SHOP_ITEMS);
+          setCoupons([]);
+          setHistory([]);
+        }
+      };
+
+      return (
+        <AppContext.Provider value={{
+          students, shopItems, coupons, history, mode, setMode,
+          selectedStudentId, setSelectedStudentId, currentStudent,
+          adjustCurrency, toggleRoleCompletion, updateStudentRole,
+          buyShopItem, useCoupon, addShopItem, deleteShopItem, resetAllData, AVAILABLE_ROLES
+        }}>
+          {children}
+        </AppContext.Provider>
+      );
+    };
+
+    const useApp = () => useContext(AppContext);
+
+    // --- COMPONENTS ---
+
+    const Header = ({ onOpenStudentSelect, onOpenShop, onOpenHistory }) => {
+      const { mode, setMode, currentStudent, resetAllData } = useApp();
+      return (
+        <header className="glass-panel" style={{ margin: '1rem', padding: '1rem 1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
+                🌟
+              </div>
+              <div>
+                <h1 style={{ fontSize: '1.25rem', fontWeight: 800 }}>드림클래스 6학년</h1>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>학급 경제 & 게이미피케이션 플랫폼</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <button className="btn btn-secondary btn-sm" onClick={onOpenShop}>🛍️ 상점</button>
+              <button className="btn btn-secondary btn-sm" onClick={onOpenHistory}>📜 내역 로그</button>
+
+              <div style={{ display: 'flex', background: 'rgba(15, 23, 42, 0.8)', padding: '3px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border-color)' }}>
+                <button className={`btn btn-sm ${mode === 'student' ? 'btn-primary' : 'btn-secondary'}`} style={{ borderRadius: 'var(--radius-full)', border: 'none' }} onClick={() => setMode('student')}>
+                  👤 학생 모드
+                </button>
+                <button className={`btn btn-sm ${mode === 'teacher' ? 'btn-primary' : 'btn-secondary'}`} style={{ borderRadius: 'var(--radius-full)', border: 'none' }} onClick={() => setMode('teacher')}>
+                  👑 교사 모드
+                </button>
+              </div>
+
+              {mode === 'student' && (
+                <button className="btn btn-amber btn-sm" onClick={onOpenStudentSelect}>
+                  <span>{currentStudent?.avatar || '👤'}</span>
+                  <span>{currentStudent?.name}</span>
+                  <span className="badge badge-purple">Lv.{currentStudent?.level}</span>
+                </button>
+              )}
+
+              {mode === 'teacher' && (
+                <span className="badge badge-amber" style={{ padding: '0.4rem 0.75rem' }}>👑 담임교사 권한</span>
+              )}
+
+              <button onClick={resetAllData} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }} title="초기화">🔄</button>
+            </div>
+          </div>
+        </header>
+      );
+    };
+
+    const StudentMain = ({ onOpenShop }) => {
+      const { currentStudent, toggleRoleCompletion, coupons, useCoupon, history } = useApp();
+      if (!currentStudent) return null;
+
+      const xpInLevel = currentStudent.xp % 100;
+      const myCoupons = coupons.filter(c => c.studentId === currentStudent.id && c.status === 'unused');
+      const myHistory = history.filter(h => h.studentName === currentStudent.name).slice(0, 5);
+
+      return (
+        <div style={{ padding: '0 1rem 2rem 1rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          
+          {/* Profile Hero */}
+          <div className="glass-panel" style={{ padding: '1.75rem', background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(49, 46, 129, 0.6))' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                <div style={{ fontSize: '3.5rem', width: '80px', height: '80px', borderRadius: '24px', background: 'rgba(255, 255, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {currentStudent.avatar || '👤'}
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                    <h2 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{currentStudent.name}</h2>
+                    <span className="badge badge-purple">⚡ Level {currentStudent.level}</span>
+                  </div>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>오늘도 화이팅! 즐거운 학급 경제 생활 🚀</p>
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '1rem 1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-glow)', textAlign: 'right' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>내 보유 화폐</div>
+                <div style={{ fontSize: '2rem', fontWeight: 900, color: '#fbbf24' }}>💰 {currentStudent.balance} <span style={{ fontSize: '1rem' }}>미소</span></div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.3rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>경험치 진행률</span>
+                <span style={{ fontWeight: 700, color: '#c084fc' }}>{xpInLevel} / 100 XP (총 {currentStudent.xp} XP)</span>
+              </div>
+              <div className="xp-bar">
+                <div className="xp-fill" style={{ width: `${xpInLevel}%` }}></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Today's Role & Coupon Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+            
+            {/* 1인 1역 */}
+            <div className="glass-panel" style={{ padding: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>📌 오늘의 1인 1역</h3>
+                <span className={`badge ${currentStudent.roleCompletedToday ? 'badge-emerald' : 'badge-amber'}`}>
+                  {currentStudent.roleCompletedToday ? '수행 완료 🎉' : '진행 중'}
+                </span>
+              </div>
+
+              <div className="glass-card" style={{ marginBottom: '1.25rem' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>담당 역할</div>
+                <div style={{ fontSize: '1.35rem', fontWeight: 800, marginTop: '0.2rem' }}>{currentStudent.role || '없음'}</div>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>역할을 성실히 수행 후 버튼을 눌러주세요!</p>
+              </div>
+
+              <button
+                className={`btn ${currentStudent.roleCompletedToday ? 'btn-emerald' : 'btn-primary'}`}
+                style={{ width: '100%', padding: '0.85rem' }}
+                onClick={() => toggleRoleCompletion(currentStudent.id)}
+              >
+                {currentStudent.roleCompletedToday ? '✅ 오늘 역할 수행 완료됨 (클릭 시 취소)' : '☑️ 오늘 역할 수행 완료하기! (+보상)'}
+              </button>
+            </div>
+
+            {/* 내 쿠폰함 */}
+            <div className="glass-panel" style={{ padding: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>🎟️ 내 쿠폰함</h3>
+                <button className="btn btn-secondary btn-sm" onClick={onOpenShop}>상점 둘러보기</button>
+              </div>
+
+              {myCoupons.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: '2rem' }}>🎟️</div>
+                  <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>보유 중인 쿠폰이 없습니다.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '220px', overflowY: 'auto' }}>
+                  {myCoupons.map(coupon => (
+                    <div key={coupon.id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                        <span style={{ fontSize: '1.4rem' }}>{coupon.icon}</span>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{coupon.title}</div>
+                          <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>구매일: {coupon.purchasedAt}</div>
+                        </div>
+                      </div>
+                      <button className="btn btn-amber btn-sm" onClick={() => { if(confirm(`선생님께 보여주고 사용하시겠습니까?`)) useCoupon(coupon.id); }}>
+                        사용하기
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          {/* History */}
+          <div className="glass-panel" style={{ padding: '1.5rem' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '0.85rem' }}>🕒 최근 내 화폐 활동 기록</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {myHistory.map(h => (
+                <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.85rem', background: 'rgba(255,255,255,0.04)', borderRadius: 'var(--radius-sm)' }}>
+                  <div>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{h.description}</span>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{h.timestamp}</div>
+                  </div>
+                  <div style={{ fontWeight: 800, color: h.type === 'EARN' ? '#34d399' : '#fbbf24' }}>
+                    {h.type === 'EARN' ? `+${h.amount}` : `-${h.amount}`} 미소
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      );
+    };
+
+    const TeacherMain = ({ onOpenShop }) => {
+      const { students, adjustCurrency, updateStudentRole, AVAILABLE_ROLES } = useApp();
+      const [search, setSearch] = useState('');
+      const [moneyModalStudent, setMoneyModalStudent] = useState(null);
+      const [amount, setAmount] = useState(50);
+      const [reason, setReason] = useState('1인 1역 완수 보상');
+      const [isGroupModal, setIsGroupModal] = useState(false);
+      const [editRoleStudent, setEditRoleStudent] = useState(null);
+      const [newRole, setNewRole] = useState('');
+
+      const filtered = students.filter(s => s.name.includes(search) || (s.role && s.role.includes(search)));
+      const completedCount = students.filter(s => s.roleCompletedToday).length;
+
+      return (
+        <div style={{ padding: '0 1rem 2rem 1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          
+          {/* Stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+            <div className="glass-panel" style={{ padding: '1.25rem' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>전체 학생 인원</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 900 }}>{students.length}명</div>
+            </div>
+            <div className="glass-panel" style={{ padding: '1.25rem' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>학급 유통 화폐 총액</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#fbbf24' }}>💰 {students.reduce((a,b)=>a+b.balance, 0).toLocaleString()} 미소</div>
+            </div>
+            <div className="glass-panel" style={{ padding: '1.25rem' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>오늘 1인 1역 완수 현황</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#34d399' }}>{completedCount} / {students.length}명</div>
+            </div>
+          </div>
+
+          {/* Search & Actions Header */}
+          <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+            <input
+              type="text"
+              placeholder="학생 이름 또는 역할 검색..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ padding: '0.6rem 1rem', background: '#0f172a', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', color: '#fff', flex: 1, minWidth: '220px' }}
+            />
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button className="btn btn-amber" onClick={() => { setAmount(50); setReason('전체 활동 보상'); setIsGroupModal(true); }}>
+                🎁 전체 학생 일괄 화폐 지급
+              </button>
+              <button className="btn btn-primary" onClick={onOpenShop}>🛍️ 상점 상품 관리</button>
+            </div>
+          </div>
+
+          {/* Student Cards Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+            {filtered.map(s => (
+              <div key={s.id} className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <span style={{ fontSize: '2rem' }}>{s.avatar}</span>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>{s.name}</div>
+                        <span className="badge badge-purple">Lv.{s.level} ({s.xp} XP)</span>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right', fontWeight: 900, color: '#fbbf24', fontSize: '1.1rem' }}>
+                      💰 {s.balance}
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '0.6rem 0.85rem', background: 'rgba(15,23,42,0.5)', borderRadius: 'var(--radius-sm)', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>1인 1역</div>
+                      <div style={{ fontSize: '0.875rem', fontWeight: 700 }}>{s.role}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                      <span className={`badge ${s.roleCompletedToday ? 'badge-emerald' : 'badge-amber'}`}>
+                        {s.roleCompletedToday ? '완수' : '미완수'}
+                      </span>
+                      <button onClick={() => { setEditRoleStudent(s); setNewRole(s.role); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>✏️</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button className="btn btn-emerald btn-sm" style={{ flex: 1 }} onClick={() => { setMoneyModalStudent(s); setAmount(50); setReason('칭찬/활동 보상'); }}>+ 지급</button>
+                  <button className="btn btn-danger btn-sm" style={{ flex: 1 }} onClick={() => { setMoneyModalStudent(s); setAmount(30); setReason('벌금/차감'); }}>- 차감</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Money Modal */}
+          {moneyModalStudent && (
+            <div className="modal-overlay" onClick={() => setMoneyModalStudent(null)}>
+              <div className="modal-content" onClick={e => e.stopPropagation()}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1rem' }}>💰 화폐 관리 - {moneyModalStudent.name}</h3>
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>금액 (미소)</label>
+                  <input type="number" value={amount} onChange={e=>setAmount(e.target.value)} style={{ width: '100%', padding: '0.6rem', background: '#0f172a', border: '1px solid var(--border-color)', borderRadius: '6px', color: '#fff', fontSize: '1rem', marginTop: '0.3rem' }} />
+                </div>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>사유</label>
+                  <input type="text" value={reason} onChange={e=>setReason(e.target.value)} style={{ width: '100%', padding: '0.6rem', background: '#0f172a', border: '1px solid var(--border-color)', borderRadius: '6px', color: '#fff', marginTop: '0.3rem' }} />
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                  <button className="btn btn-secondary" onClick={() => setMoneyModalStudent(null)}>취소</button>
+                  <button className="btn btn-danger" onClick={() => { adjustCurrency(moneyModalStudent.id, -Math.abs(Number(amount)), reason); setMoneyModalStudent(null); }}>- 차감하기</button>
+                  <button className="btn btn-emerald" onClick={() => { adjustCurrency(moneyModalStudent.id, Math.abs(Number(amount)), reason); setMoneyModalStudent(null); }}>+ 지급하기 (+XP)</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Group Money Modal */}
+          {isGroupModal && (
+            <div className="modal-overlay" onClick={() => setIsGroupModal(false)}>
+              <div className="modal-content" onClick={e => e.stopPropagation()}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1rem' }}>🎁 전체 25명 일괄 화폐 지급</h3>
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>1인당 지급 금액</label>
+                  <input type="number" value={amount} onChange={e=>setAmount(e.target.value)} style={{ width: '100%', padding: '0.6rem', background: '#0f172a', border: '1px solid var(--border-color)', borderRadius: '6px', color: '#fff' }} />
+                </div>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>지급 사유</label>
+                  <input type="text" value={reason} onChange={e=>setReason(e.target.value)} style={{ width: '100%', padding: '0.6rem', background: '#0f172a', border: '1px solid var(--border-color)', borderRadius: '6px', color: '#fff' }} />
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                  <button className="btn btn-secondary" onClick={() => setIsGroupModal(false)}>취소</button>
+                  <button className="btn btn-amber" onClick={() => { adjustCurrency(null, Number(amount), reason, true); setIsGroupModal(false); }}>🎁 25명 일괄 지급</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Edit Role Modal */}
+          {editRoleStudent && (
+            <div className="modal-overlay" onClick={() => setEditRoleStudent(null)}>
+              <div className="modal-content" onClick={e => e.stopPropagation()}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1rem' }}>✏️ 역할 변경 - {editRoleStudent.name}</h3>
+                <select value={newRole} onChange={e=>setNewRole(e.target.value)} style={{ width: '100%', padding: '0.65rem', background: '#0f172a', color: '#fff', border: '1px solid var(--border-color)', borderRadius: '6px', marginBottom: '1.5rem' }}>
+                  {AVAILABLE_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                  <button className="btn btn-secondary" onClick={() => setEditRoleStudent(null)}>취소</button>
+                  <button className="btn btn-primary" onClick={() => { updateStudentRole(editRoleStudent.id, newRole); setEditRoleStudent(null); }}>저장</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    };
+
+    // --- MODALS ---
+    const StudentProfileModal = ({ isOpen, onClose }) => {
+      const { students, setSelectedStudentId, selectedStudentId } = useApp();
+      if (!isOpen) return null;
+      return (
+        <div className="modal-overlay" onClick={onClose}>
+          <div className="modal-content" style={{ maxWidth: '720px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 800 }}>👤 내 프로필 선택 (25명)</h2>
+              <button className="btn btn-secondary btn-sm" onClick={onClose}>✕</button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.65rem', maxHeight: '450px', overflowY: 'auto' }}>
+              {students.map(s => (
+                <div key={s.id} onClick={() => { setSelectedStudentId(s.id); onClose(); }} className="glass-card" style={{ textAlign: 'center', cursor: 'pointer', padding: '0.85rem 0.5rem', border: s.id === selectedStudentId ? '2px solid #6366f1' : '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '2rem' }}>{s.avatar}</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff' }}>{s.name}</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Lv.{s.level} | 💰{s.balance}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const ShopModal = ({ isOpen, onClose }) => {
+      const { shopItems, mode, currentStudent, buyShopItem, addShopItem, deleteShopItem } = useApp();
+      const [isForm, setIsForm] = useState(false);
+      const [title, setTitle] = useState('');
+      const [price, setPrice] = useState(200);
+      const [desc, setDesc] = useState('');
+      const [stock, setStock] = useState(10);
+      const [icon, setIcon] = useState('🎁');
+
+      if (!isOpen) return null;
+
+      const handleAdd = (e) => {
+        e.preventDefault();
+        addShopItem({ title, price: Number(price), description: desc, stock: Number(stock), icon });
+        setIsForm(false);
+        setTitle('');
+      };
+
+      return (
+        <div className="modal-overlay" onClick={onClose}>
+          <div className="modal-content" style={{ maxWidth: '760px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>🛍️ 학급 상점 & 쿠폰 마켓</h2>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {mode === 'teacher' && <button className="btn btn-emerald btn-sm" onClick={() => setIsForm(!isForm)}>+ 상품 등록</button>}
+                <button className="btn btn-secondary btn-sm" onClick={onClose}>✕</button>
+              </div>
+            </div>
+
+            {mode === 'teacher' && isForm && (
+              <form onSubmit={handleAdd} className="glass-card" style={{ marginBottom: '1rem' }}>
+                <h4 style={{ fontWeight: 700, marginBottom: '0.75rem', color: '#fbbf24' }}>➕ 새 상품 추가</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <input type="text" placeholder="이모지" value={icon} onChange={e=>setIcon(e.target.value)} style={{ padding: '0.4rem', background: '#0f172a', border: '1px solid var(--border-color)', color: '#fff' }} />
+                  <input type="text" placeholder="상품명" value={title} onChange={e=>setTitle(e.target.value)} required style={{ padding: '0.4rem', background: '#0f172a', border: '1px solid var(--border-color)', color: '#fff' }} />
+                  <input type="number" placeholder="가격" value={price} onChange={e=>setPrice(e.target.value)} required style={{ padding: '0.4rem', background: '#0f172a', border: '1px solid var(--border-color)', color: '#fff' }} />
+                  <input type="number" placeholder="재고" value={stock} onChange={e=>setStock(e.target.value)} required style={{ padding: '0.4rem', background: '#0f172a', border: '1px solid var(--border-color)', color: '#fff' }} />
+                </div>
+                <input type="text" placeholder="설명" value={desc} onChange={e=>setDesc(e.target.value)} style={{ width: '100%', padding: '0.4rem', background: '#0f172a', border: '1px solid var(--border-color)', color: '#fff', marginBottom: '0.5rem' }} />
+                <button type="submit" className="btn btn-emerald btn-sm">저장</button>
+              </form>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.85rem', maxHeight: '420px', overflowY: 'auto' }}>
+              {shopItems.map(item => (
+                <div key={item.id} className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                      <span style={{ fontSize: '1.8rem' }}>{item.icon}</span>
+                      <span className="badge badge-amber">💰 {item.price} 미소</span>
+                    </div>
+                    <h4 style={{ fontWeight: 800, fontSize: '0.95rem', color: '#fff' }}>{item.title}</h4>
+                    <p style={{ fontSize: '0.775rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{item.description}</p>
+                  </div>
+                  <div style={{ marginTop: '0.75rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                      <span>재고: {item.stock}개</span>
+                      {mode === 'teacher' && <button onClick={()=>deleteShopItem(item.id)} style={{ color: '#f43f5e', background: 'none', border: 'none', cursor: 'pointer' }}>삭제</button>}
+                    </div>
+                    {mode === 'student' && (
+                      <button
+                        className="btn btn-amber btn-sm"
+                        style={{ width: '100%' }}
+                        disabled={currentStudent?.balance < item.price || item.stock <= 0}
+                        onClick={() => alert(buyShopItem(currentStudent.id, item.id).message)}
+                      >
+                        {item.stock <= 0 ? '품절' : currentStudent?.balance < item.price ? '잔액 부족' : '구매하기 🛍️'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const HistoryModal = ({ isOpen, onClose }) => {
+      const { history, mode, currentStudent } = useApp();
+      if (!isOpen) return null;
+      const list = mode === 'student' ? history.filter(h => h.studentName === currentStudent?.name || h.studentName === '전체 학생') : history;
+
+      return (
+        <div className="modal-overlay" onClick={onClose}>
+          <div className="modal-content" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 800 }}>📜 활동 & 화폐 내역 로그</h2>
+              <button className="btn btn-secondary btn-sm" onClick={onClose}>✕</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '400px', overflowY: 'auto' }}>
+              {list.map(item => (
+                <div key={item.id} className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', padding: '0.65rem 0.85rem' }}>
+                  <div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>[{item.studentName}] {item.description}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{item.timestamp}</div>
+                  </div>
+                  <div style={{ fontWeight: 800, color: item.type === 'EARN' ? '#34d399' : '#fbbf24' }}>
+                    {item.amount > 0 ? `+${item.amount}` : item.amount} 미소
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // --- MAIN APP ---
+    const App = () => {
+      const { mode } = useApp();
+      const [isProfileOpen, setIsProfileOpen] = useState(false);
+      const [isShopOpen, setIsShopOpen] = useState(false);
+      const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+      return (
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <Header
+            onOpenStudentSelect={() => setIsProfileOpen(true)}
+            onOpenShop={() => setIsShopOpen(true)}
+            onOpenHistory={() => setIsHistoryOpen(true)}
+          />
+          <main>
+            {mode === 'student' ? (
+              <StudentMain onOpenShop={() => setIsShopOpen(true)} />
+            ) : (
+              <TeacherMain onOpenShop={() => setIsShopOpen(true)} />
+            )}
+          </main>
+          <footer style={{ textAlign: 'center', padding: '2rem 1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            🌟 초등학교 6학년 학급 관리 & 경제 게이미피케이션 플랫폼 | 2026 DreamClass
+          </footer>
+
+          <StudentProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+          <ShopModal isOpen={isShopOpen} onClose={() => setIsShopOpen(false)} />
+          <HistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
+        </div>
+      );
+    };
+
+    const Root = () => (
+      <AppProvider>
+        <App />
+      </AppProvider>
+    );
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
+  </script>
+</body>
+</html>
